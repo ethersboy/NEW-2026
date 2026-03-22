@@ -15,7 +15,7 @@
     #timer { font-size: 20px; color: #e74c3c; margin: 10px 0; font-weight: bold; text-align: center; }
     #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; min-height: 50px; }
     .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .option { background: #ecf0f1; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; border: 2px solid #bdc3c7; text-align: center; }
+    .option { background: #ecf0f1; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; border: 2px solid #bdc3c7; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 50px; }
     .option:hover { background: #dfe6e9; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
     .option.correct { background: #2ecc71 !important; color: white; border-color: #27ae60; }
     .option.wrong { background: #e74c3c !important; color: white; border-color: #c0392b; }
@@ -101,6 +101,7 @@
       score = 0;
       timeLeft = 120;
       document.getElementById('score').textContent = score;
+      document.getElementById('result').textContent = '';
       startGame();
     }
 
@@ -136,15 +137,14 @@
       const correct = currentElement.config;
       let options = [correct];
 
-      // 如果有特別設定誘答（鉻 24 或 銅 29）
       if (currentElement.trap) {
         options.push(currentElement.trap);
       }
 
-      // 補足到 4 個選項，從 1-30 號中隨機抓
+      const allConfigs = Object.values(elements).map(e => e.config);
+      
       while (options.length < 4) {
-        const randNum = Math.floor(Math.random() * 30) + 1;
-        const randConfig = elements[randNum].config;
+        const randConfig = allConfigs[Math.floor(Math.random() * allConfigs.length)];
         if (!options.includes(randConfig)) {
           options.push(randConfig);
         }
@@ -168,7 +168,7 @@
       const options = document.querySelectorAll('.option');
 
       options.forEach(opt => {
-        opt.onclick = null; // 禁止重複點擊
+        opt.onclick = null;
         if (opt.textContent === correct) opt.classList.add('correct');
         if (opt.textContent === selected && selected !== correct) opt.classList.add('wrong');
       });
@@ -210,7 +210,6 @@
       });
     }
 
-    // 啟動遊戲
     startGame();
   </script>
 </body>
