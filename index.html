@@ -1,148 +1,108 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>電子組態大賽 - Ethersboy 醚樣男子</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #74ebd5, #acb6e5); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    #game-container { background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative; }
-    h1 { color: #333; font-size: 24px; margin-bottom: 15px; text-align: center; }
-    #mode-toggle { display: flex; justify-content: center; margin-bottom: 10px; }
-    #mode-toggle button { margin: 0 5px; padding: 8px 16px; border: none; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-weight: bold; }
-    #mode-toggle button.active { background: #2ecc71; }
-    #timer { font-size: 20px; color: #e74c3c; margin: 10px 0; font-weight: bold; text-align: center; }
-    #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; min-height: 50px; font-weight: bold; }
-    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .option { background: #ecf0f1; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; border: 2px solid #bdc3c7; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 50px; }
-    .option.correct { background: #2ecc71 !important; color: white; border-color: #27ae60; }
-    .option.wrong { background: #e74c3c !important; color: white; border-color: #c0392b; }
-    #result { font-size: 16px; margin: 10px 0; color: #34495e; text-align: center; font-weight: bold; min-height: 24px; }
-    #scoreboard { margin-top: 15px; padding: 10px; background: rgba(236, 240, 241, 0.8); border-radius: 10px; }
-    #ranking { list-style: none; padding: 0; font-size: 14px; color: #7f8c8d; }
-    #ethersboy { position: absolute; bottom: 10px; right: 10px; font-size: 14px; color: #e67e22; font-weight: bold; background: rgba(255, 255, 255, 0.7); padding: 4px 8px; border-radius: 5px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電子組態大賽</title>
+    <style>
+        body { font-family: sans-serif; background: #eef2f5; text-align: center; padding: 20px; }
+        #game-box { background: white; max-width: 400px; margin: auto; padding: 20px; border-radius: 15px; shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .opt-btn { display: block; width: 100%; padding: 15px; margin: 10px 0; background: #3498db; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        #q-text { font-size: 22px; font-weight: bold; margin: 20px 0; color: #2c3e50; }
+        #feedback { font-weight: bold; height: 24px; color: #e67e22; }
+        .start-btn { background: #2ecc71; padding: 20px; font-size: 20px; }
+    </style>
 </head>
 <body>
-  <div id="game-container">
-    <h1>電子組態大賽</h1>
-    <div id="mode-toggle">
-      <button id="standardBtn" class="active">標準模式</button>
-      <button id="advancedBtn">進階模式</button>
-    </div>
-    <div id="timer">剩餘時間: 2:00</div>
-    <div id="question">載入中...</div>
-    <div class="options" id="options"></div>
-    <div id="result"></div>
-    <div id="scoreboard">
-      <h2>得分: <span id="score">0</span> 酚</h2>
-      <ol id="ranking"></ol>
-    </div>
-    <div id="ethersboy">Ethersboy 醚樣男子</div>
-  </div>
 
-  <script>
-    const elements = {
-      1: { s: "H", n: "氫", c: "1s1" },
-      2: { s: "He", n: "氦", c: "1s2" },
-      3: { s: "Li", n: "鋰", c: "[He] 2s1" },
-      4: { s: "Be", n: "鈹", c: "[He] 2s2" },
-      5: { s: "B", n: "硼", c: "[He] 2s2 2p1" },
-      6: { s: "C", n: "碳", c: "[He] 2s2 2p2" },
-      7: { s: "N", n: "氮", c: "[He] 2s2 2p3" },
-      8: { s: "O", n: "氧", c: "[He] 2s2 2p4" },
-      9: { s: "F", n: "氟", c: "[He] 2s2 2p5" },
-      10: { s: "Ne", n: "氖", c: "[He] 2s2 2p6" },
-      11: { s: "Na", n: "鈉", c: "[Ne] 3s1" },
-      12: { s: "Mg", n: "鎂", c: "[Ne] 3s2" },
-      13: { s: "Al", n: "鋁", c: "[Ne] 3s2 3p1" },
-      14: { s: "Si", n: "矽", c: "[Ne] 3s2 3p2" },
-      15: { s: "P", n: "磷", c: "[Ne] 3s2 3p3" },
-      16: { s: "S", n: "硫", c: "[Ne] 3s2 3p4" },
-      17: { s: "Cl", n: "氯", c: "[Ne] 3s2 3p5" },
-      18: { s: "Ar", n: "氬", c: "[Ne] 3s2 3p6" },
-      19: { s: "K", n: "鉀", c: "[Ar] 4s1" },
-      20: { s: "Ca", n: "鈣", c: "[Ar] 4s2" },
-      21: { s: "Sc", n: "鈧", c: "[Ar] 4s2 3d1" },
-      22: { s: "Ti", n: "鈦", c: "[Ar] 4s2 3d2" },
-      23: { s: "V", n: "釩", c: "[Ar] 4s2 3d3" },
-      24: { s: "Cr", n: "鉻", c: "[Ar] 4s1 3d5" },
-      25: { s: "Mn", n: "錳", c: "[Ar] 4s2 3d5" },
-      26: { s: "Fe", n: "鐵", c: "[Ar] 4s2 3d6" },
-      27: { s: "Co", n: "鈷", c: "[Ar] 4s2 3d7" },
-      28: { s: "Ni", n: "鎳", c: "[Ar] 4s2 3d8" },
-      29: { s: "Cu", n: "銅", c: "[Ar] 4s1 3d10" },
-      30: { s: "Zn", n: "鋅", c: "[Ar] 4s2 3d10" }
+<div id="game-box">
+    <h2>電子組態大賽 (1-30)</h2>
+    <div id="timer" style="color:red; font-weight:bold;">時間：120s</div>
+    
+    <div id="main-area">
+        <button class="opt-btn start-btn" onclick="init()">點擊開始遊戲</button>
+        <p style="font-size:12px; color:gray;">(如果畫面卡住，請點擊上方按鈕)</p>
+    </div>
+
+    <div id="feedback"></div>
+    <div style="margin-top:20px;">目前得分：<span id="score">0</span></div>
+</div>
+
+<script>
+    var elements = {
+        1: ["H", "1s1"], 2: ["He", "1s2"], 3: ["Li", "[He] 2s1"], 4: ["Be", "[He] 2s2"], 5: ["B", "[He] 2s2 2p1"],
+        6: ["C", "[He] 2s2 2p2"], 7: ["N", "[He] 2s2 2p3"], 8: ["O", "[He] 2s2 2p4"], 9: ["F", "[He] 2s2 2p5"], 10: ["Ne", "[He] 2s2 2p6"],
+        11: ["Na", "[Ne] 3s1"], 12: ["Mg", "[Ne] 3s2"], 13: ["Al", "[Ne] 3s2 3p1"], 14: ["Si", "[Ne] 3s2 3p2"], 15: ["P", "[Ne] 3s2 3p3"],
+        16: ["S", "[Ne] 3s2 3p4"], 17: ["Cl", "[Ne] 3s2 3p5"], 18: ["Ar", "[Ne] 3s2 3p6"], 19: ["K", "[Ar] 4s1"], 20: ["Ca", "[Ar] 4s2"],
+        21: ["Sc", "[Ar] 4s2 3d1"], 22: ["Ti", "[Ar] 4s2 3d2"], 23: ["V", "[Ar] 4s2 3d3"], 24: ["Cr", "[Ar] 4s1 3d5"], 25: ["Mn", "[Ar] 4s2 3d5"],
+        26: ["Fe", "[Ar] 4s2 3d6"], 27: ["Co", "[Ar] 4s2 3d7"], 28: ["Ni", "[Ar] 4s2 3d8"], 29: ["Cu", "[Ar] 4s1 3d10"], 30: ["Zn", "[Ar] 4s2 3d10"]
     };
 
-    let score = 0, timeLeft = 120, timer, currentKey, isAdvanced = false;
-    let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
+    var score = 0;
+    var timeLeft = 120;
+    var currentNum;
 
-    function updateMode(val) { isAdvanced = val; resetGame(); }
-    document.getElementById('standardBtn').onclick = () => { updateMode(false); document.getElementById('standardBtn').className='active'; document.getElementById('advancedBtn').className=''; };
-    document.getElementById('advancedBtn').onclick = () => { updateMode(true); document.getElementById('advancedBtn').className='active'; document.getElementById('standardBtn').className=''; };
+    function init() {
+        score = 0;
+        timeLeft = 120;
+        document.getElementById('score').innerText = score;
+        
+        // 啟動計時器
+        var timerInterval = setInterval(function() {
+            timeLeft--;
+            document.getElementById('timer').innerText = "時間：" + timeLeft + "s";
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('main-area').innerHTML = "<h3>遊戲結束！總分：" + score + "</h3><button class='opt-btn' onclick='location.reload()'>再玩一次</button>";
+            }
+        }, 1000);
 
-    function resetGame() { clearInterval(timer); score = 0; timeLeft = 120; startGame(); }
-
-    function startGame() {
-      document.getElementById('score').textContent = score;
-      nextQuestion();
-      timer = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').textContent = `剩餘時間: ${Math.floor(timeLeft/60)}:${(timeLeft%60).toString().padStart(2,'0')}`;
-        if(timeLeft <= 0) endGame();
-      }, 1000);
-      updateRankDisplay();
+        renderQuestion();
     }
 
-    function nextQuestion() {
-      const keys = Object.keys(elements);
-      currentKey = keys[Math.floor(Math.random() * keys.length)];
-      const el = elements[currentKey];
-      document.getElementById('question').textContent = isAdvanced ? 請選出 ${el.s} 的電子組態： : `請選出 ${el.n} (${currentKey}號) 的組態：`;
-      document.getElementById('result').textContent = '';
-      
-      let opts = [el.c];
-      const allC = Object.values(elements).map(e => e.c);
-      while(opts.length < 4) {
-        let r = allC[Math.floor(Math.random()*allC.length)];
-        if(!opts.includes(r)) opts.push(r);
-      }
-      opts.sort(() => Math.random() - 0.5);
+    function renderQuestion() {
+        var keys = Object.keys(elements);
+        currentNum = keys[Math.floor(Math.random() * keys.length)];
+        var correctConfig = elements[currentNum][1];
+        var symbol = elements[currentNum][0];
 
-      const box = document.getElementById('options');
-      box.innerHTML = '';
-      opts.forEach(o => {
-        const d = document.createElement('div');
-        d.className = 'option'; d.textContent = o;
-        d.onclick = () => {
-          const all = document.querySelectorAll('.option');
-          all.forEach(b => { b.onclick = null; if(b.textContent === el.c) b.classList.add('correct'); });
-          if(o === el.c) { score++; document.getElementById('result').textContent = '答對了！'; }
-          else { d.classList.add('wrong'); document.getElementById('result').textContent = '答錯囉！'; }
-          document.getElementById('score').textContent = score;
-          setTimeout(nextQuestion, 1200);
-        };
-        box.appendChild(d);
-      });
+        // 建立題目 HTML
+        var html = '<div id="q-text">' + symbol + ' (' + currentNum + '號) 的組態？</div>';
+        
+        // 製作選項
+        var options = [correctConfig];
+        while (options.length < 4) {
+            var randomNum = Math.floor(Math.random() * 30) + 1;
+            var randomConfig = elements[randomNum][1];
+            if (options.indexOf(randomConfig) === -1) {
+                options.push(randomConfig);
+            }
+        }
+        options.sort(function() { return 0.5 - Math.random(); });
+
+        // 建立按鈕 HTML
+        for (var i = 0; i < options.length; i++) {
+            html += '<button class="opt-btn" onclick="check(\'' + options[i] + '\', \'' + correctConfig + '\')">' + options[i] + '</button>';
+        }
+
+        document.getElementById('main-area').innerHTML = html;
     }
 
-    function endGame() {
-      clearInterval(timer);
-      document.getElementById('options').innerHTML = '';
-      document.getElementById('question').textContent = '遊戲結束！';
-      document.getElementById('result').textContent = `最終得分：${score}`;
-      rankings.push(score); rankings.sort((a,b)=>b-a); rankings = rankings.slice(0,5);
-      localStorage.setItem('rankings', JSON.stringify(rankings));
-      updateRankDisplay();
+    function check(selected, correct) {
+        if (selected === correct) {
+            score++;
+            document.getElementById('feedback').innerText = "答對了！";
+            document.getElementById('feedback').style.color = "green";
+        } else {
+            document.getElementById('feedback').innerText = "答錯！正確是 " + correct;
+            document.getElementById('feedback').style.color = "red";
+        }
+        document.getElementById('score').innerText = score;
+        
+        // 1秒後下一題
+        setTimeout(renderQuestion, 1000);
     }
+</script>
 
-    function updateRankDisplay() {
-      document.getElementById('ranking').innerHTML = rankings.map((s,i) => `<li>第 ${i+1} 名：${s} 酚</li>`).join('');
-    }
-
-    startGame();
-  </script>
 </body>
 </html>
