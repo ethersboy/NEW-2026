@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>電子組態大賽 - Ethersboy 醚樣男子</title>
   <style>
-    /* ... 保持你原本的 CSS 不變 ... */
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #74ebd5, #acb6e5); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
     #game-container { background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; }
@@ -14,13 +13,13 @@
     #mode-toggle button { margin: 0 5px; padding: 8px 16px; border: none; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-weight: bold; }
     #mode-toggle button.active { background: #2ecc71; }
     #timer { font-size: 20px; color: #e74c3c; margin: 10px 0; font-weight: bold; text-align: center; }
-    #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; }
+    #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; min-height: 50px; }
     .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .option { background: #ecf0f1; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; border: 2px solid #bdc3c7; text-align: center; }
     .option:hover { background: #dfe6e9; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
     .option.correct { background: #2ecc71 !important; color: white; border-color: #27ae60; }
     .option.wrong { background: #e74c3c !important; color: white; border-color: #c0392b; }
-    #result { font-size: 16px; margin: 10px 0; color: #34495e; text-align: center; font-weight: bold; }
+    #result { font-size: 16px; margin: 10px 0; color: #34495e; text-align: center; font-weight: bold; min-height: 24px; }
     #scoreboard { margin-top: 15px; padding: 10px; background: rgba(236, 240, 241, 0.8); border-radius: 10px; }
     #scoreboard h2 { margin: 0 0 10px; color: #2980b9; font-size: 18px; }
     #ranking { list-style: none; padding: 0; font-size: 14px; color: #7f8c8d; }
@@ -71,26 +70,20 @@
       21: { symbol: "Sc", name: "鈧", config: "[Ar] 4s2 3d1" },
       22: { symbol: "Ti", name: "鈦", config: "[Ar] 4s2 3d2" },
       23: { symbol: "V", name: "釩", config: "[Ar] 4s2 3d3" },
-      24: { 
-        symbol: "Cr", name: "鉻", config: "[Ar] 4s1 3d5", 
-        traps: ["[Ar] 4s2 3d4"] 
-      },
+      24: { symbol: "Cr", name: "鉻", config: "[Ar] 4s1 3d5", trap: "[Ar] 4s2 3d4" },
       25: { symbol: "Mn", name: "錳", config: "[Ar] 4s2 3d5" },
       26: { symbol: "Fe", name: "鐵", config: "[Ar] 4s2 3d6" },
       27: { symbol: "Co", name: "鈷", config: "[Ar] 4s2 3d7" },
       28: { symbol: "Ni", name: "鎳", config: "[Ar] 4s2 3d8" },
-      29: { 
-        symbol: "Cu", name: "銅", config: "[Ar] 4s1 3d10", 
-        traps: ["[Ar] 4s2 3d9"] 
-      },
-      30: { symbol: "Zn", name: "鋅", config: "[Ar] 4s2 3d10" },
+      29: { symbol: "Cu", name: "銅", config: "[Ar] 4s1 3d10", trap: "[Ar] 4s2 3d9" },
+      30: { symbol: "Zn", name: "鋅", config: "[Ar] 4s2 3d10" }
     };
 
     let score = 0;
     let timeLeft = 120;
     let timer;
     let currentElement;
-    let currentAtomicNumber;
+    let currentKey;
     let isAdvanced = false;
     let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
 
@@ -103,9 +96,19 @@
       resetGame();
     }
 
-    function resetGame() { clearInterval(timer); score = 0; timeLeft = 120; document.getElementById('score').textContent = score; startGame(); }
+    function resetGame() {
+      clearInterval(timer);
+      score = 0;
+      timeLeft = 120;
+      document.getElementById('score').textContent = score;
+      startGame();
+    }
 
-    function startGame() { updateRanking(); nextQuestion(); timer = setInterval(updateTimer, 1000); }
+    function startGame() {
+      updateRanking();
+      nextQuestion();
+      timer = setInterval(updateTimer, 1000);
+    }
 
     function updateTimer() {
       timeLeft--;
@@ -117,12 +120,12 @@
 
     function nextQuestion() {
       const keys = Object.keys(elements);
-      currentAtomicNumber = keys[Math.floor(Math.random() * keys.length)];
-      currentElement = elements[currentAtomicNumber];
+      currentKey = keys[Math.floor(Math.random() * keys.length)];
+      currentElement = elements[currentKey];
 
       const questionText = isAdvanced
         ? 請選出元素 ${currentElement.symbol} 的電子組態：
-        : `請選出 ${currentElement.name} (原子序 ${currentAtomicNumber}) 的電子組態：`;
+        : `請選出 ${currentElement.name} (原子序 ${currentKey}) 的電子組態：`;
 
       document.getElementById('question').textContent = questionText;
       document.getElementById('result').textContent = '';
@@ -133,16 +136,18 @@
       const correct = currentElement.config;
       let options = [correct];
 
-      // 如果是鉻或銅，強制加入誘答
-      if (currentElement.traps) {
-        options.push(...currentElement.traps);
+      // 如果有特別設定誘答（鉻 24 或 銅 29）
+      if (currentElement.trap) {
+        options.push(currentElement.trap);
       }
 
-      // 補足到 4 個選項
+      // 補足到 4 個選項，從 1-30 號中隨機抓
       while (options.length < 4) {
-        const randKey = Math.floor(Math.random() * 30) + 1;
-        const randConfig = elements[randKey].config;
-        if (!options.includes(randConfig)) options.push(randConfig);
+        const randNum = Math.floor(Math.random() * 30) + 1;
+        const randConfig = elements[randNum].config;
+        if (!options.includes(randConfig)) {
+          options.push(randConfig);
+        }
       }
 
       options.sort(() => Math.random() - 0.5);
@@ -163,7 +168,7 @@
       const options = document.querySelectorAll('.option');
 
       options.forEach(opt => {
-        opt.onclick = null;
+        opt.onclick = null; // 禁止重複點擊
         if (opt.textContent === correct) opt.classList.add('correct');
         if (opt.textContent === selected && selected !== correct) opt.classList.add('wrong');
       });
@@ -173,15 +178,14 @@
         document.getElementById('result').textContent = '答對！得1酚';
       } else {
         let msg = `答錯！正確答案是 ${correct}`;
-        // 針對 24, 29 號給予提示
-        if (currentAtomicNumber == 24 || currentAtomicNumber == 29) {
-          msg += " (注意全滿/半滿例外！)";
+        if (currentKey == 24 || currentKey == 29) {
+          msg += " (全滿/半滿例外！)";
         }
         document.getElementById('result').textContent = msg;
       }
 
       document.getElementById('score').textContent = score;
-      setTimeout(nextQuestion, 1500); // 稍微延長一下讓學生看清楚解析
+      setTimeout(nextQuestion, 1200);
     }
 
     function endGame() {
@@ -206,6 +210,7 @@
       });
     }
 
+    // 啟動遊戲
     startGame();
   </script>
 </body>
