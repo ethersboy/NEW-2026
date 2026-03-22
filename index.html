@@ -9,7 +9,7 @@
       box-sizing: border-box;
     }
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
+      font-family: 'Segoe UI', "Microsoft JhengHei", Arial, sans-serif;
       background: linear-gradient(135deg, #74ebd5, #acb6e5);
       margin: 0;
       padding: 0;
@@ -22,22 +22,11 @@
       background: rgba(255, 255, 255, 0.95);
       border-radius: 15px;
       padding: 20px;
-      width: 100%;
+      width: 95%;
       max-width: 480px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       position: relative;
       overflow: hidden;
-    }
-    #game-container::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
-      transform: rotate(30deg);
-      pointer-events: none;
     }
     h1 {
       color: #333;
@@ -75,6 +64,7 @@
       color: #2c3e50;
       margin: 10px 0;
       text-align: center;
+      min-height: 50px;
     }
     .options {
       display: grid;
@@ -84,34 +74,39 @@
     }
     .option {
       background: #ecf0f1;
-      padding: 12px;
+      padding: 15px 5px;
       border-radius: 10px;
       cursor: pointer;
-      transition: all 0.3s;
-      font-size: 14px;
+      transition: all 0.2s;
+      font-size: 13px;
       border: 2px solid #bdc3c7;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      word-break: break-all;
     }
     .option:hover {
       background: #dfe6e9;
       transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     .option.correct {
-      background: #2ecc71;
+      background: #2ecc71 !important;
       color: white;
       border-color: #27ae60;
     }
     .option.wrong {
-      background: #e74c3c;
+      background: #e74c3c !important;
       color: white;
       border-color: #c0392b;
     }
     #result {
       font-size: 16px;
       margin: 10px 0;
+      height: 24px;
       color: #34495e;
       text-align: center;
+      font-weight: bold;
     }
     #scoreboard {
       margin-top: 15px;
@@ -119,10 +114,9 @@
       background: rgba(236, 240, 241, 0.8);
       border-radius: 10px;
     }
-    #scoreboard h2 {
-      margin: 0 0 10px;
+    #scoreboard h2, #scoreboard h3 {
+      margin: 5px 0;
       color: #2980b9;
-      font-size: 18px;
     }
     #ranking {
       list-style: none;
@@ -132,15 +126,12 @@
     }
     #ethersboy {
       position: absolute;
-      bottom: 10px;
+      bottom: 5px;
       right: 10px;
-      font-size: 16px;
+      font-size: 12px;
       color: #e67e22;
       font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-      background: rgba(255, 255, 255, 0.7);
-      padding: 4px 8px;
-      border-radius: 5px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -152,12 +143,12 @@
       <button id="advancedBtn">進階模式</button>
     </div>
     <div id="timer">剩餘時間: 2:00</div>
-    <div id="question"></div>
+    <div id="question">載入中...</div>
     <div class="options" id="options"></div>
     <div id="result"></div>
     <div id="scoreboard">
       <h2>得分: <span id="score">0</span> 酚</h2>
-      <h3>排行榜</h3>
+      <h3>排行榜 (Top 5)</h3>
       <ol id="ranking"></ol>
     </div>
     <div id="ethersboy">Ethersboy 醚樣男子</div>
@@ -201,6 +192,7 @@
     let timeLeft = 120;
     let timer;
     let currentElement;
+    let currentZ;
     let isAdvanced = false;
     let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
 
@@ -235,22 +227,23 @@
 
     function updateTimer() {
       timeLeft--;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        endGame();
+      }
       let min = Math.floor(timeLeft / 60);
       let sec = timeLeft % 60;
       document.getElementById('timer').textContent = `剩餘時間: ${min}:${sec < 10 ? '0' + sec : sec}`;
-      if (timeLeft <= 0) {
-        endGame();
-      }
     }
 
     function nextQuestion() {
       const keys = Object.keys(elements);
-      const randKey = keys[Math.floor(Math.random() * keys.length)];
-      currentElement = elements[randKey];
+      currentZ = keys[Math.floor(Math.random() * keys.length)];
+      currentElement = elements[currentZ];
 
       const questionText = isAdvanced
         ? `請選出元素 ${currentElement.symbol} 的電子組態：`
-        : `請選出 ${currentElement.name} (原子序 ${randKey}) 的電子組態：`;
+        : `請選出 ${currentElement.name} (原子序 ${currentZ}) 的電子組態：`;
 
       document.getElementById('question').textContent = questionText;
       document.getElementById('result').textContent = '';
@@ -260,12 +253,28 @@
     function generateOptions() {
       const correct = currentElement.config;
       let options = [correct];
+      const z = parseInt(currentZ);
 
       while (options.length < 4) {
-        const rand = elements[Math.floor(Math.random() * 20) + 1];
-        if (!options.includes(rand.config)) options.push(rand.config);
+        let randConfig;
+        
+        // --- 核心邏輯微調：如果題目在 21-30 區間 ---
+        if (z >= 21 && z <= 30) {
+          // 強制從 21-30 號元素中挑選干擾項，確保都有 d 軌域
+          const dKey = Math.floor(Math.random() * 10) + 21;
+          randConfig = elements[dKey].config;
+        } else {
+          // 20 號以前的題目，從 1-20 號挑選干擾項
+          const sKey = Math.floor(Math.random() * 20) + 1;
+          randConfig = elements[sKey].config;
+        }
+
+        if (!options.includes(randConfig)) {
+          options.push(randConfig);
+        }
       }
 
+      // 隨機洗牌
       options.sort(() => Math.random() - 0.5);
 
       const optionsDiv = document.getElementById('options');
@@ -284,7 +293,7 @@
       const options = document.querySelectorAll('.option');
 
       options.forEach(opt => {
-        opt.onclick = null;
+        opt.onclick = null; // 防止重複點擊
         if (opt.textContent === correct) opt.classList.add('correct');
         if (opt.textContent === selected && selected !== correct) opt.classList.add('wrong');
       });
@@ -292,12 +301,14 @@
       if (selected === correct) {
         score++;
         document.getElementById('result').textContent = '答對！得1酚';
+        document.getElementById('result').style.color = '#2ecc71';
       } else {
         document.getElementById('result').textContent = `答錯！正確答案是 ${correct}`;
+        document.getElementById('result').style.color = '#e74c3c';
       }
 
       document.getElementById('score').textContent = score;
-      setTimeout(nextQuestion, 1000);
+      setTimeout(nextQuestion, 1200);
     }
 
     function endGame() {
@@ -318,12 +329,11 @@
       list.innerHTML = '';
       rankings.forEach((s, i) => {
         const li = document.createElement('li');
-        li.textContent = `第${i + 1}名: ${s} 酚`;
+        li.textContent = `第 ${i + 1} 名: ${s} 酚`;
         list.appendChild(li);
       });
     }
 
-    // Start game on load
     startGame();
   </script>
 </body>
