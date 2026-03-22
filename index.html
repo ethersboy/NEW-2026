@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #74ebd5, #acb6e5); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    #game-container { background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; }
+    #game-container { background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); position: relative; }
     h1 { color: #333; font-size: 24px; margin-bottom: 15px; text-align: center; }
     #mode-toggle { display: flex; justify-content: center; margin-bottom: 10px; }
     #mode-toggle button { margin: 0 5px; padding: 8px 16px; border: none; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-weight: bold; }
@@ -16,13 +16,11 @@
     #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; min-height: 50px; font-weight: bold; }
     .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .option { background: #ecf0f1; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; border: 2px solid #bdc3c7; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 50px; }
-    .option:hover { background: #dfe6e9; transform: translateY(-2px); }
     .option.correct { background: #2ecc71 !important; color: white; border-color: #27ae60; }
     .option.wrong { background: #e74c3c !important; color: white; border-color: #c0392b; }
     #result { font-size: 16px; margin: 10px 0; color: #34495e; text-align: center; font-weight: bold; min-height: 24px; }
     #scoreboard { margin-top: 15px; padding: 10px; background: rgba(236, 240, 241, 0.8); border-radius: 10px; }
-    #scoreboard h2 { margin: 0 0 5px; color: #2980b9; font-size: 18px; }
-    #ranking { list-style: none; padding: 0; font-size: 14px; color: #7f8c8d; margin: 0; }
+    #ranking { list-style: none; padding: 0; font-size: 14px; color: #7f8c8d; }
     #ethersboy { position: absolute; bottom: 10px; right: 10px; font-size: 14px; color: #e67e22; font-weight: bold; background: rgba(255, 255, 255, 0.7); padding: 4px 8px; border-radius: 5px; }
   </style>
 </head>
@@ -39,7 +37,6 @@
     <div id="result"></div>
     <div id="scoreboard">
       <h2>得分: <span id="score">0</span> 酚</h2>
-      <h3>前五名排行榜</h3>
       <ol id="ranking"></ol>
     </div>
     <div id="ethersboy">Ethersboy 醚樣男子</div>
@@ -47,150 +44,105 @@
 
   <script>
     const elements = {
-      1: { symbol: "H", name: "氫", config: "1s1" },
-      2: { symbol: "He", name: "氦", config: "1s2" },
-      3: { symbol: "Li", name: "鋰", config: "[He] 2s1" },
-      4: { symbol: "Be", name: "鈹", config: "[He] 2s2" },
-      5: { symbol: "B", name: "硼", config: "[He] 2s2 2p1" },
-      6: { symbol: "C", name: "碳", config: "[He] 2s2 2p2" },
-      7: { symbol: "N", name: "氮", config: "[He] 2s2 2p3" },
-      8: { symbol: "O", name: "氧", config: "[He] 2s2 2p4" },
-      9: { symbol: "F", name: "氟", config: "[He] 2s2 2p5" },
-      10: { symbol: "Ne", name: "氖", config: "[He] 2s2 2p6" },
-      11: { symbol: "Na", name: "鈉", config: "[Ne] 3s1" },
-      12: { symbol: "Mg", name: "鎂", config: "[Ne] 3s2" },
-      13: { symbol: "Al", name: "鋁", config: "[Ne] 3s2 3p1" },
-      14: { symbol: "Si", name: "矽", config: "[Ne] 3s2 3p2" },
-      15: { symbol: "P", name: "磷", config: "[Ne] 3s2 3p3" },
-      16: { symbol: "S", name: "硫", config: "[Ne] 3s2 3p4" },
-      17: { symbol: "Cl", name: "氯", config: "[Ne] 3s2 3p5" },
-      18: { symbol: "Ar", name: "氬", config: "[Ne] 3s2 3p6" },
-      19: { symbol: "K", name: "鉀", config: "[Ar] 4s1" },
-      20: { symbol: "Ca", name: "鈣", config: "[Ar] 4s2" },
-      21: { symbol: "Sc", name: "鈧", config: "[Ar] 4s2 3d1" },
-      22: { symbol: "Ti", name: "鈦", config: "[Ar] 4s2 3d2" },
-      23: { symbol: "V", name: "釩", config: "[Ar] 4s2 3d3" },
-      24: { symbol: "Cr", name: "鉻", config: "[Ar] 4s1 3d5", trap: "[Ar] 4s2 3d4" },
-      25: { symbol: "Mn", name: "錳", config: "[Ar] 4s2 3d5" },
-      26: { symbol: "Fe", name: "鐵", config: "[Ar] 4s2 3d6" },
-      27: { symbol: "Co", name: "鈷", config: "[Ar] 4s2 3d7" },
-      28: { symbol: "Ni", name: "鎳", config: "[Ar] 4s2 3d8" },
-      29: { symbol: "Cu", name: "銅", config: "[Ar] 4s1 3d10", trap: "[Ar] 4s2 3d9" },
-      30: { symbol: "Zn", name: "鋅", config: "[Ar] 4s2 3d10" }
+      1: { s: "H", n: "氫", c: "1s1" },
+      2: { s: "He", n: "氦", c: "1s2" },
+      3: { s: "Li", n: "鋰", c: "[He] 2s1" },
+      4: { s: "Be", n: "鈹", c: "[He] 2s2" },
+      5: { s: "B", n: "硼", c: "[He] 2s2 2p1" },
+      6: { s: "C", n: "碳", c: "[He] 2s2 2p2" },
+      7: { s: "N", n: "氮", c: "[He] 2s2 2p3" },
+      8: { s: "O", n: "氧", c: "[He] 2s2 2p4" },
+      9: { s: "F", n: "氟", c: "[He] 2s2 2p5" },
+      10: { s: "Ne", n: "氖", c: "[He] 2s2 2p6" },
+      11: { s: "Na", n: "鈉", c: "[Ne] 3s1" },
+      12: { s: "Mg", n: "鎂", c: "[Ne] 3s2" },
+      13: { s: "Al", n: "鋁", c: "[Ne] 3s2 3p1" },
+      14: { s: "Si", n: "矽", c: "[Ne] 3s2 3p2" },
+      15: { s: "P", n: "磷", c: "[Ne] 3s2 3p3" },
+      16: { s: "S", n: "硫", c: "[Ne] 3s2 3p4" },
+      17: { s: "Cl", n: "氯", c: "[Ne] 3s2 3p5" },
+      18: { s: "Ar", n: "氬", c: "[Ne] 3s2 3p6" },
+      19: { s: "K", n: "鉀", c: "[Ar] 4s1" },
+      20: { s: "Ca", n: "鈣", c: "[Ar] 4s2" },
+      21: { s: "Sc", n: "鈧", c: "[Ar] 4s2 3d1" },
+      22: { s: "Ti", n: "鈦", c: "[Ar] 4s2 3d2" },
+      23: { s: "V", n: "釩", c: "[Ar] 4s2 3d3" },
+      24: { s: "Cr", n: "鉻", c: "[Ar] 4s1 3d5" },
+      25: { s: "Mn", n: "錳", c: "[Ar] 4s2 3d5" },
+      26: { s: "Fe", n: "鐵", c: "[Ar] 4s2 3d6" },
+      27: { s: "Co", n: "鈷", c: "[Ar] 4s2 3d7" },
+      28: { s: "Ni", n: "鎳", c: "[Ar] 4s2 3d8" },
+      29: { s: "Cu", n: "銅", c: "[Ar] 4s1 3d10" },
+      30: { s: "Zn", n: "鋅", c: "[Ar] 4s2 3d10" }
     };
 
-    let score = 0;
-    let timeLeft = 120;
-    let timerInterval;
-    let currentKey;
-    let isAdvanced = false;
+    let score = 0, timeLeft = 120, timer, currentKey, isAdvanced = false;
     let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
 
-    document.getElementById('standardBtn').addEventListener('click', () => { isAdvanced = false; updateMode(); });
-    document.getElementById('advancedBtn').addEventListener('click', () => { isAdvanced = true; updateMode(); });
+    function updateMode(val) { isAdvanced = val; resetGame(); }
+    document.getElementById('standardBtn').onclick = () => { updateMode(false); document.getElementById('standardBtn').className='active'; document.getElementById('advancedBtn').className=''; };
+    document.getElementById('advancedBtn').onclick = () => { updateMode(true); document.getElementById('advancedBtn').className='active'; document.getElementById('standardBtn').className=''; };
 
-    function updateMode() {
-      document.getElementById('standardBtn').classList.toggle('active', !isAdvanced);
-      document.getElementById('advancedBtn').classList.toggle('active', isAdvanced);
-      initGame();
-    }
+    function resetGame() { clearInterval(timer); score = 0; timeLeft = 120; startGame(); }
 
-    function initGame() {
-      clearInterval(timerInterval);
-      score = 0;
-      timeLeft = 120;
+    function startGame() {
       document.getElementById('score').textContent = score;
-      document.getElementById('result').textContent = '';
-      updateRankingDisplay();
       nextQuestion();
-      startTimer();
-    }
-
-    function startTimer() {
-      timerInterval = setInterval(() => {
+      timer = setInterval(() => {
         timeLeft--;
-        const min = Math.floor(timeLeft / 60);
-        const sec = timeLeft % 60;
-        document.getElementById('timer').textContent = `剩餘時間: ${min}:${sec < 10 ? '0' + sec : sec}`;
-        if (timeLeft <= 0) finishGame();
+        document.getElementById('timer').textContent = `剩餘時間: ${Math.floor(timeLeft/60)}:${(timeLeft%60).toString().padStart(2,'0')}`;
+        if(timeLeft <= 0) endGame();
       }, 1000);
+      updateRankDisplay();
     }
 
     function nextQuestion() {
       const keys = Object.keys(elements);
       currentKey = keys[Math.floor(Math.random() * keys.length)];
-      const item = elements[currentKey];
-
-      document.getElementById('question').textContent = isAdvanced 
-        ? 請選出 ${item.symbol} 的電子組態： 
-        : `請選出 ${item.name} (${currentKey}號) 的組態：`;
-      
+      const el = elements[currentKey];
+      document.getElementById('question').textContent = isAdvanced ? 請選出 ${el.s} 的電子組態： : `請選出 ${el.n} (${currentKey}號) 的組態：`;
       document.getElementById('result').textContent = '';
-      renderOptions(item);
-    }
-
-    function renderOptions(item) {
-      const optionSet = new Set();
-      optionSet.add(item.config);
-      if (item.trap) optionSet.add(item.trap);
-
-      const configs = Object.values(elements).map(e => e.config);
-      while (optionSet.size < 4) {
-        optionSet.add(configs[Math.floor(Math.random() * configs.length)]);
+      
+      let opts = [el.c];
+      const allC = Object.values(elements).map(e => e.c);
+      while(opts.length < 4) {
+        let r = allC[Math.floor(Math.random()*allC.length)];
+        if(!opts.includes(r)) opts.push(r);
       }
+      opts.sort(() => Math.random() - 0.5);
 
-      const optionsArray = Array.from(optionSet).sort(() => Math.random() - 0.5);
-      const container = document.getElementById('options');
-      container.innerHTML = '';
-
-      optionsArray.forEach(opt => {
-        const btn = document.createElement('div');
-        btn.className = 'option';
-        btn.textContent = opt;
-        btn.onclick = () => verifyAnswer(opt, item.config, btn);
-        container.appendChild(btn);
+      const box = document.getElementById('options');
+      box.innerHTML = '';
+      opts.forEach(o => {
+        const d = document.createElement('div');
+        d.className = 'option'; d.textContent = o;
+        d.onclick = () => {
+          const all = document.querySelectorAll('.option');
+          all.forEach(b => { b.onclick = null; if(b.textContent === el.c) b.classList.add('correct'); });
+          if(o === el.c) { score++; document.getElementById('result').textContent = '答對了！'; }
+          else { d.classList.add('wrong'); document.getElementById('result').textContent = '答錯囉！'; }
+          document.getElementById('score').textContent = score;
+          setTimeout(nextQuestion, 1200);
+        };
+        box.appendChild(d);
       });
     }
 
-    function verifyAnswer(selected, correct, btn) {
-      const allOptions = document.querySelectorAll('.option');
-      allOptions.forEach(o => o.onclick = null);
-
-      if (selected === correct) {
-        btn.classList.add('correct');
-        score++;
-        document.getElementById('result').textContent = '答對了！+1 酚';
-      } else {
-        btn.classList.add('wrong');
-        allOptions.forEach(o => { if(o.textContent === correct) o.classList.add('correct'); });
-        let feedback = `錯囉！正確是 ${correct}`;
-        if (currentKey == 24 || currentKey == 29) feedback += " (注意全滿/半滿！)";
-        document.getElementById('result').textContent = feedback;
-      }
-
-      document.getElementById('score').textContent = score;
-      setTimeout(nextQuestion, 1500);
-    }
-
-    function finishGame() {
-      clearInterval(timerInterval);
-      document.getElementById('question').textContent = '遊戲結束！';
+    function endGame() {
+      clearInterval(timer);
       document.getElementById('options').innerHTML = '';
-      document.getElementById('result').textContent = `最終獲得 ${score} 酚！`;
-      
-      rankings.push(score);
-      rankings.sort((a, b) => b - a);
-      rankings = rankings.slice(0, 5);
+      document.getElementById('question').textContent = '遊戲結束！';
+      document.getElementById('result').textContent = `最終得分：${score}`;
+      rankings.push(score); rankings.sort((a,b)=>b-a); rankings = rankings.slice(0,5);
       localStorage.setItem('rankings', JSON.stringify(rankings));
-      updateRankingDisplay();
+      updateRankDisplay();
     }
 
-    function updateRankingDisplay() {
-      const list = document.getElementById('ranking');
-      list.innerHTML = rankings.map((s, i) => `<li>第 ${i+1} 名：${s} 酚</li>`).join('');
+    function updateRankDisplay() {
+      document.getElementById('ranking').innerHTML = rankings.map((s,i) => `<li>第 ${i+1} 名：${s} 酚</li>`).join('');
     }
 
-    initGame();
+    startGame();
   </script>
 </body>
 </html>
