@@ -13,17 +13,17 @@
     #mode-toggle button { margin: 0 5px; padding: 8px 16px; border: none; border-radius: 8px; background: #3498db; color: white; cursor: pointer; font-weight: bold; }
     #mode-toggle button.active { background: #2ecc71; }
     #timer { font-size: 20px; color: #e74c3c; margin: 10px 0; font-weight: bold; text-align: center; }
-    #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; min-height: 50px; }
+    #question { font-size: 18px; color: #2c3e50; margin: 10px 0; text-align: center; min-height: 50px; font-weight: bold; }
     .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     .option { background: #ecf0f1; padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-size: 14px; border: 2px solid #bdc3c7; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 50px; }
-    .option:hover { background: #dfe6e9; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .option:hover { background: #dfe6e9; transform: translateY(-2px); }
     .option.correct { background: #2ecc71 !important; color: white; border-color: #27ae60; }
     .option.wrong { background: #e74c3c !important; color: white; border-color: #c0392b; }
     #result { font-size: 16px; margin: 10px 0; color: #34495e; text-align: center; font-weight: bold; min-height: 24px; }
     #scoreboard { margin-top: 15px; padding: 10px; background: rgba(236, 240, 241, 0.8); border-radius: 10px; }
-    #scoreboard h2 { margin: 0 0 10px; color: #2980b9; font-size: 18px; }
-    #ranking { list-style: none; padding: 0; font-size: 14px; color: #7f8c8d; }
-    #ethersboy { position: absolute; bottom: 10px; right: 10px; font-size: 16px; color: #e67e22; font-weight: bold; background: rgba(255, 255, 255, 0.7); padding: 4px 8px; border-radius: 5px; }
+    #scoreboard h2 { margin: 0 0 5px; color: #2980b9; font-size: 18px; }
+    #ranking { list-style: none; padding: 0; font-size: 14px; color: #7f8c8d; margin: 0; }
+    #ethersboy { position: absolute; bottom: 10px; right: 10px; font-size: 14px; color: #e67e22; font-weight: bold; background: rgba(255, 255, 255, 0.7); padding: 4px 8px; border-radius: 5px; }
   </style>
 </head>
 <body>
@@ -34,12 +34,12 @@
       <button id="advancedBtn">進階模式</button>
     </div>
     <div id="timer">剩餘時間: 2:00</div>
-    <div id="question"></div>
+    <div id="question">載入中...</div>
     <div class="options" id="options"></div>
     <div id="result"></div>
     <div id="scoreboard">
       <h2>得分: <span id="score">0</span> 酚</h2>
-      <h3>排行榜</h3>
+      <h3>前五名排行榜</h3>
       <ol id="ranking"></ol>
     </div>
     <div id="ethersboy">Ethersboy 醚樣男子</div>
@@ -81,136 +81,116 @@
 
     let score = 0;
     let timeLeft = 120;
-    let timer;
-    let currentElement;
+    let timerInterval;
     let currentKey;
     let isAdvanced = false;
     let rankings = JSON.parse(localStorage.getItem('rankings')) || [];
 
-    document.getElementById('standardBtn').onclick = () => { isAdvanced = false; setModeButtons(); };
-    document.getElementById('advancedBtn').onclick = () => { isAdvanced = true; setModeButtons(); };
+    document.getElementById('standardBtn').addEventListener('click', () => { isAdvanced = false; updateMode(); });
+    document.getElementById('advancedBtn').addEventListener('click', () => { isAdvanced = true; updateMode(); });
 
-    function setModeButtons() {
+    function updateMode() {
       document.getElementById('standardBtn').classList.toggle('active', !isAdvanced);
       document.getElementById('advancedBtn').classList.toggle('active', isAdvanced);
-      resetGame();
+      initGame();
     }
 
-    function resetGame() {
-      clearInterval(timer);
+    function initGame() {
+      clearInterval(timerInterval);
       score = 0;
       timeLeft = 120;
       document.getElementById('score').textContent = score;
       document.getElementById('result').textContent = '';
-      startGame();
-    }
-
-    function startGame() {
-      updateRanking();
+      updateRankingDisplay();
       nextQuestion();
-      timer = setInterval(updateTimer, 1000);
+      startTimer();
     }
 
-    function updateTimer() {
-      timeLeft--;
-      let min = Math.floor(timeLeft / 60);
-      let sec = timeLeft % 60;
-      document.getElementById('timer').textContent = `剩餘時間: ${min}:${sec < 10 ? '0' + sec : sec}`;
-      if (timeLeft <= 0) endGame();
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const min = Math.floor(timeLeft / 60);
+        const sec = timeLeft % 60;
+        document.getElementById('timer').textContent = `剩餘時間: ${min}:${sec < 10 ? '0' + sec : sec}`;
+        if (timeLeft <= 0) finishGame();
+      }, 1000);
     }
 
     function nextQuestion() {
       const keys = Object.keys(elements);
       currentKey = keys[Math.floor(Math.random() * keys.length)];
-      currentElement = elements[currentKey];
+      const item = elements[currentKey];
 
-      const questionText = isAdvanced
-        ? 請選出元素 ${currentElement.symbol} 的電子組態：
-        : `請選出 ${currentElement.name} (原子序 ${currentKey}) 的電子組態：`;
-
-      document.getElementById('question').textContent = questionText;
-      document.getElementById('result').textContent = '';
-      generateOptions();
-    }
-
-    function generateOptions() {
-      const correct = currentElement.config;
-      let options = [correct];
-
-      if (currentElement.trap) {
-        options.push(currentElement.trap);
-      }
-
-      const allConfigs = Object.values(elements).map(e => e.config);
+      document.getElementById('question').textContent = isAdvanced 
+        ? 請選出 ${item.symbol} 的電子組態： 
+        : `請選出 ${item.name} (${currentKey}號) 的組態：`;
       
-      while (options.length < 4) {
-        const randConfig = allConfigs[Math.floor(Math.random() * allConfigs.length)];
-        if (!options.includes(randConfig)) {
-          options.push(randConfig);
-        }
+      document.getElementById('result').textContent = '';
+      renderOptions(item);
+    }
+
+    function renderOptions(item) {
+      const optionSet = new Set();
+      optionSet.add(item.config);
+      if (item.trap) optionSet.add(item.trap);
+
+      const configs = Object.values(elements).map(e => e.config);
+      while (optionSet.size < 4) {
+        optionSet.add(configs[Math.floor(Math.random() * configs.length)]);
       }
 
-      options.sort(() => Math.random() - 0.5);
+      const optionsArray = Array.from(optionSet).sort(() => Math.random() - 0.5);
+      const container = document.getElementById('options');
+      container.innerHTML = '';
 
-      const optionsDiv = document.getElementById('options');
-      optionsDiv.innerHTML = '';
-      options.forEach(opt => {
-        const div = document.createElement('div');
-        div.className = 'option';
-        div.textContent = opt;
-        div.onclick = () => checkAnswer(opt);
-        optionsDiv.appendChild(div);
+      optionsArray.forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'option';
+        btn.textContent = opt;
+        btn.onclick = () => verifyAnswer(opt, item.config, btn);
+        container.appendChild(btn);
       });
     }
 
-    function checkAnswer(selected) {
-      const correct = currentElement.config;
-      const options = document.querySelectorAll('.option');
-
-      options.forEach(opt => {
-        opt.onclick = null;
-        if (opt.textContent === correct) opt.classList.add('correct');
-        if (opt.textContent === selected && selected !== correct) opt.classList.add('wrong');
-      });
+    function verifyAnswer(selected, correct, btn) {
+      const allOptions = document.querySelectorAll('.option');
+      allOptions.forEach(o => o.onclick = null);
 
       if (selected === correct) {
+        btn.classList.add('correct');
         score++;
-        document.getElementById('result').textContent = '答對！得1酚';
+        document.getElementById('result').textContent = '答對了！+1 酚';
       } else {
-        let msg = `答錯！正確答案是 ${correct}`;
-        if (currentKey == 24 || currentKey == 29) {
-          msg += " (全滿/半滿例外！)";
-        }
-        document.getElementById('result').textContent = msg;
+        btn.classList.add('wrong');
+        allOptions.forEach(o => { if(o.textContent === correct) o.classList.add('correct'); });
+        let feedback = `錯囉！正確是 ${correct}`;
+        if (currentKey == 24 || currentKey == 29) feedback += " (注意全滿/半滿！)";
+        document.getElementById('result').textContent = feedback;
       }
 
       document.getElementById('score').textContent = score;
-      setTimeout(nextQuestion, 1200);
+      setTimeout(nextQuestion, 1500);
     }
 
-    function endGame() {
-      clearInterval(timer);
+    function finishGame() {
+      clearInterval(timerInterval);
       document.getElementById('question').textContent = '遊戲結束！';
       document.getElementById('options').innerHTML = '';
-      document.getElementById('result').textContent = `最終得分: ${score} 酚`;
+      document.getElementById('result').textContent = `最終獲得 ${score} 酚！`;
+      
       rankings.push(score);
       rankings.sort((a, b) => b - a);
       rankings = rankings.slice(0, 5);
       localStorage.setItem('rankings', JSON.stringify(rankings));
-      updateRanking();
+      updateRankingDisplay();
     }
 
-    function updateRanking() {
+    function updateRankingDisplay() {
       const list = document.getElementById('ranking');
-      list.innerHTML = '';
-      rankings.forEach((s, i) => {
-        const li = document.createElement('li');
-        li.textContent = `第${i + 1}名: ${s} 酚`;
-        list.appendChild(li);
-      });
+      list.innerHTML = rankings.map((s, i) => `<li>第 ${i+1} 名：${s} 酚</li>`).join('');
     }
 
-    startGame();
+    initGame();
   </script>
 </body>
 </html>
